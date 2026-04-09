@@ -258,13 +258,13 @@ class GameScene(Scene):
 
         # Strafe left - perpendicular to facing direction (90 degrees left)
         if actions["left"]:
-            direction.x += math.cos(player_rad + math.pi / 2)
-            direction.y += -math.sin(player_rad + math.pi / 2)
+            direction.x += math.cos(player_rad - math.pi / 2)
+            direction.y += -math.sin(player_rad - math.pi / 2)
 
         # Strafe right - perpendicular to facing direction (90 degrees right)
         if actions["right"]:
-            direction.x += math.cos(player_rad - math.pi / 2)
-            direction.y += -math.sin(player_rad - math.pi / 2)
+            direction.x += math.cos(player_rad + math.pi / 2)
+            direction.y += -math.sin(player_rad + math.pi / 2)
 
         # Rotation with arrow keys (separate from movement)
         if actions["rotate_left"]:
@@ -576,6 +576,38 @@ class GameScene(Scene):
             health_text,
             (constants.HUD_MARGIN, constants.HUD_MARGIN),
         )
+
+        # Show nearby items
+        nearby_item = self._get_nearby_item()
+        if nearby_item:
+            item_text = font.render(
+                f"NEARBY: Press E to pick up {nearby_item}",
+                True,
+                (255, 255, 0),  # Yellow
+            )
+            screen.blit(
+                item_text,
+                (constants.HUD_MARGIN, constants.HUD_MARGIN + 25),
+            )
+
+    def _get_nearby_item(self) -> str:
+        """Check if player is near an item.
+
+        Returns:
+            Item name if nearby, None otherwise.
+        """
+        if not self._player or not self._items:
+            return None
+
+        pickup_distance = constants.TILE_SIZE * 1.5
+        for item in self._items:
+            distance = self._player.position.distance_to(item.position)
+            if distance < pickup_distance:
+                if item.item_type.name == "WEAPON":
+                    return f"{item.weapon.name}"
+                elif item.item_type.name == "ARMOR":
+                    return f"{item.armor.name}"
+        return None
 
     def _render_debug_overlay(self, screen: pygame.Surface) -> None:
         """Render the debug overlay with game information.

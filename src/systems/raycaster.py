@@ -187,7 +187,7 @@ class Raycaster:
         # Base colors
         base_colors = {
             "wall": (120, 120, 120),  # Gray walls
-            "door": (100, 100, 200),  # Blue doors
+            "door": (139, 69, 19),  # Brown/Maroon doors
         }
 
         base_color = base_colors.get(tile, (120, 120, 120))
