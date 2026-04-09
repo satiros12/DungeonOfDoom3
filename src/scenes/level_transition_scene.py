@@ -50,7 +50,7 @@ class LevelTransitionScene(Scene):
             # Transition to the next level game scene
             from src.scenes.game_scene import GameScene
 
-            self._game.scene_manager.replace(GameScene(self._game, self._target_level))
+            self.game.scene_manager.replace(GameScene(self.game, self._target_level))
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the transition.
@@ -71,9 +71,7 @@ class LevelTransitionScene(Scene):
         elif self._phase == "done":
             # Fade to black before transitioning
             fade_alpha = min(255, int(255 * (self._timer / 0.5)))
-            fade_surface = pygame.Surface(
-                (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
-            )
+            fade_surface = pygame.Surface((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
             fade_surface.fill((0, 0, 0))
             fade_surface.set_alpha(fade_alpha)
             screen.blit(fade_surface, (0, 0))

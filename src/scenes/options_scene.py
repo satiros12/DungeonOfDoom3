@@ -28,9 +28,7 @@ class OptionsScene(Scene):
 
         # Menu options: Fullscreen, Turn Speed, Music Volume, SFX Volume
         self._menu_options: List[str] = [
-            "FULLSCREEN: ON"
-            if self._options.get("fullscreen", False)
-            else "FULLSCREEN: OFF",
+            "FULLSCREEN: ON" if self._options.get("fullscreen", False) else "FULLSCREEN: OFF",
             f"TURN SPEED: {self._options.get('turn_speed', 90)}",
             f"MUSIC: {int(self._options.get('music_volume', 0.7) * 100)}%",
             f"SFX: {int(self._options.get('sfx_volume', 0.5) * 100)}%",
@@ -44,11 +42,20 @@ class OptionsScene(Scene):
 
         logging.info("Options scene initialized")
 
-    def _load_options_from_file(self) -> dict:
-        """Load options from the config file.
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle pygame events.
 
-        Returns:
-            Dictionary of options.
+        Args:
+            event: The pygame event to handle.
+        """
+        if event.type == pygame.KEYDOWN:
+            self._handle_keydown(event.key)
+
+    def update(self, dt: float) -> None:
+        """Update options input handling.
+
+        Args:
+            dt: Delta time since last frame in seconds.
         """
         try:
             with open("config/options.json", "r") as f:
@@ -68,9 +75,7 @@ class OptionsScene(Scene):
         Args:
             dt: Delta time since last frame in seconds.
         """
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                self._handle_keydown(event.key)
+        pass
 
     def _handle_keydown(self, key: int) -> None:
         """Handle key press events.
@@ -121,9 +126,7 @@ class OptionsScene(Scene):
             current = self._options.get("music_volume", 0.7)
             new_vol = max(0.0, min(1.0, current + direction * 0.1))
             self._options["music_volume"] = round(new_vol, 1)
-            self._menu_options[2] = (
-                f"MUSIC: {int(self._options['music_volume'] * 100)}%"
-            )
+            self._menu_options[2] = f"MUSIC: {int(self._options['music_volume'] * 100)}%"
         elif "SFX" in option:
             current = self._options.get("sfx_volume", 0.5)
             new_vol = max(0.0, min(1.0, current + direction * 0.1))
@@ -142,9 +145,7 @@ class OptionsScene(Scene):
                     pygame.FULLSCREEN,
                 )
             else:
-                pygame.display.set_mode(
-                    (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
-                )
+                pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
             logging.info(f"Fullscreen: {self._options['fullscreen']}")
         except Exception as e:
             logging.warning(f"Could not apply fullscreen: {e}")
@@ -169,7 +170,7 @@ class OptionsScene(Scene):
 
                 self.game.change_scene(MenuScene(self.game))
             else:
-                self._game.scene_manager.pop()
+                self.game.scene_manager.pop()
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the options scene.
@@ -180,9 +181,7 @@ class OptionsScene(Scene):
         screen.fill(constants.MENU_BG_COLOR)
 
         # Render title
-        title_surface = self._font_title.render(
-            "OPTIONS", True, constants.UI_COLOR_TEXT_PRIMARY
-        )
+        title_surface = self._font_title.render("OPTIONS", True, constants.UI_COLOR_TEXT_PRIMARY)
         title_rect = title_surface.get_rect(
             center=(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2 - 150)
         )
@@ -196,9 +195,7 @@ class OptionsScene(Scene):
         ]
         font_small = pygame.font.Font(None, 24)
         for i, instr in enumerate(instructions):
-            instr_surface = font_small.render(
-                instr, True, constants.UI_COLOR_TEXT_SECONDARY
-            )
+            instr_surface = font_small.render(instr, True, constants.UI_COLOR_TEXT_SECONDARY)
             instr_rect = instr_surface.get_rect(
                 center=(
                     constants.SCREEN_WIDTH // 2,

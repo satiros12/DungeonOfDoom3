@@ -81,6 +81,9 @@ class Game:
                 if event.type == pygame.QUIT:
                     self._running = False
                     logging.info("Quit event received")
+                else:
+                    # Dispatch all other events to the scene manager
+                    self._scene_manager.handle_event(event)
 
             self.update(dt)
             self.render(self._screen)

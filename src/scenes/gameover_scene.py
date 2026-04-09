@@ -37,7 +37,7 @@ class GameOverScene(Scene):
         if self._timer >= constants.GAMEOVER_DISPLAY_TIME:
             from src.scenes.game_scene import GameScene
 
-            self._game.scene_manager.replace(GameScene(self._game, 1))
+            self.game.scene_manager.replace(GameScene(self.game, 1))
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the game over scene.

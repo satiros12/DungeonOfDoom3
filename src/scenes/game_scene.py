@@ -121,9 +121,7 @@ class GameScene(Scene):
 
         for enemy_data in enemies_data:
             patrol_id = enemy_data.get("patrol_id", -1)
-            patrol_points = (
-                patrols[patrol_id] if 0 <= patrol_id < len(patrols) else None
-            )
+            patrol_points = patrols[patrol_id] if 0 <= patrol_id < len(patrols) else None
 
             enemy = Enemy(
                 position=enemy_data["position"],
@@ -326,7 +324,7 @@ class GameScene(Scene):
         logging.info("Pause requested")
         from src.scenes.pause_scene import PauseScene
 
-        self._game.scene_manager.push(PauseScene(self._game, self))
+        self.game.scene_manager.push(PauseScene(self._game, self))
 
     def _handle_door_interaction(self) -> None:
         """Handle door interaction (E key)."""
@@ -367,13 +365,13 @@ class GameScene(Scene):
             # Victory - all levels complete
             from src.scenes.victory_scene import VictoryScene
 
-            self._game.scene_manager.replace(VictoryScene(self._game))
+            self.game.scene_manager.replace(VictoryScene(self._game))
         else:
             # Transition to next level
             level_name = constants.LEVEL_NAMES.get(next_level, "Unknown")
             from src.scenes.level_transition_scene import LevelTransitionScene
 
-            self._game.scene_manager.replace(
+            self.game.scene_manager.replace(
                 LevelTransitionScene(self._game, level_name, next_level)
             )
 
@@ -382,7 +380,7 @@ class GameScene(Scene):
         logging.info("Player died!")
         from src.scenes.gameover_scene import GameOverScene
 
-        self._game.scene_manager.replace(GameOverScene(self._game))
+        self.game.scene_manager.replace(GameOverScene(self._game))
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the game scene.
@@ -529,9 +527,7 @@ class GameScene(Scene):
         # Health bar background
         bg_rect = pygame.Rect(
             constants.HUD_MARGIN,
-            constants.SCREEN_HEIGHT
-            - constants.HUD_MARGIN
-            - constants.HUD_HEALTH_BAR_HEIGHT,
+            constants.SCREEN_HEIGHT - constants.HUD_MARGIN - constants.HUD_HEALTH_BAR_HEIGHT,
             constants.HUD_HEALTH_BAR_WIDTH,
             constants.HUD_HEALTH_BAR_HEIGHT,
         )
@@ -543,9 +539,7 @@ class GameScene(Scene):
         if fill_width > 0:
             fill_rect = pygame.Rect(
                 constants.HUD_MARGIN,
-                constants.SCREEN_HEIGHT
-                - constants.HUD_MARGIN
-                - constants.HUD_HEALTH_BAR_HEIGHT,
+                constants.SCREEN_HEIGHT - constants.HUD_MARGIN - constants.HUD_HEALTH_BAR_HEIGHT,
                 fill_width,
                 constants.HUD_HEALTH_BAR_HEIGHT,
             )
@@ -611,6 +605,4 @@ class GameScene(Scene):
         # Render debug text
         for i, line in enumerate(debug_info):
             text = font.render(line, True, (0, 255, 0))
-            screen.blit(
-                text, (bg_rect.x + padding, bg_rect.y + padding + i * line_height)
-            )
+            screen.blit(text, (bg_rect.x + padding, bg_rect.y + padding + i * line_height))

@@ -20,6 +20,14 @@ class Scene(ABC):
         """
         self.game = game
 
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle a pygame event.
+
+        Args:
+            event: The pygame event to handle.
+        """
+        pass
+
     @abstractmethod
     def update(self, dt: float) -> None:
         """Update the scene logic.

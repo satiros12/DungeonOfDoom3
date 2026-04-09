@@ -37,7 +37,7 @@ class VictoryScene(Scene):
         if self._timer >= constants.VICTORY_DISPLAY_TIME:
             from src.scenes.menu_scene import MenuScene
 
-            self._game.scene_manager.replace(MenuScene(self._game))
+            self.game.scene_manager.replace(MenuScene(self.game))
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the victory scene.
@@ -48,9 +48,7 @@ class VictoryScene(Scene):
         screen.fill((0, 0, 0))
 
         # Draw "VICTORY" text
-        title = self._title_font.render(
-            "VICTORY!", True, constants.UI_COLOR_TEXT_PRIMARY
-        )
+        title = self._title_font.render("VICTORY!", True, constants.UI_COLOR_TEXT_PRIMARY)
         title_rect = title.get_rect(
             center=(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 3)
         )

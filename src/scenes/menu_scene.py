@@ -31,15 +31,22 @@ class MenuScene(Scene):
 
         logging.info("Menu scene initialized")
 
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle pygame events.
+
+        Args:
+            event: The pygame event to handle.
+        """
+        if event.type == pygame.KEYDOWN:
+            self._handle_keydown(event.key)
+
     def update(self, dt: float) -> None:
-        """Update menu input handling.
+        """Update menu logic (placeholder for animations).
 
         Args:
             dt: Delta time since last frame in seconds.
         """
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                self._handle_keydown(event.key)
+        pass
 
     def _handle_keydown(self, key: int) -> None:
         """Handle key press events.
@@ -70,7 +77,7 @@ class MenuScene(Scene):
             from src.scenes.options_scene import OptionsScene
 
             options_scene = OptionsScene(self.game, return_to_menu=True)
-            self._game.scene_manager.push(options_scene)
+            self.game.scene_manager.push(options_scene)
         elif option == "EXIT":
             logging.info("Exiting game...")
             self.game.running = False
@@ -85,9 +92,7 @@ class MenuScene(Scene):
 
         # Render title
         title_text = "ESCAPE THE DUNGEON"
-        title_surface = self._font_title.render(
-            title_text, True, constants.UI_COLOR_TEXT_PRIMARY
-        )
+        title_surface = self._font_title.render(title_text, True, constants.UI_COLOR_TEXT_PRIMARY)
         title_rect = title_surface.get_rect(
             center=(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2 - 100)
         )

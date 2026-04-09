@@ -46,6 +46,15 @@ class SceneManager:
         """Clear all scenes from the stack."""
         self._scenes.clear()
 
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle a pygame event.
+
+        Args:
+            event: The pygame event to handle.
+        """
+        if self._scenes:
+            self._scenes[-1].handle_event(event)
+
     def update(self, dt: float) -> None:
         """Update the current scene.
 

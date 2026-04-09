@@ -29,48 +29,48 @@ class PauseScene(Scene):
 
         logging.info("PauseScene initialized")
 
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle pygame events.
+
+        Args:
+            event: The pygame event to handle.
+        """
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                self._selected_index = (self._selected_index - 1) % len(self._options)
+            elif event.key == pygame.K_DOWN:
+                self._selected_index = (self._selected_index + 1) % len(self._options)
+            elif event.key == pygame.K_RETURN:
+                self._handle_selection()
+            elif event.key == pygame.K_ESCAPE:
+                # Resume on ESC
+                self.game.scene_manager.pop()
+
     def update(self, dt: float) -> None:
-        """Update the pause menu.
+        """Update pause scene (placeholder for animations).
 
         Args:
             dt: Delta time since last frame in seconds.
         """
-        # Don't update game scene while paused
-
-        # Handle input for menu navigation
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    self._selected_index = (self._selected_index - 1) % len(
-                        self._options
-                    )
-                elif event.key == pygame.K_DOWN:
-                    self._selected_index = (self._selected_index + 1) % len(
-                        self._options
-                    )
-                elif event.key == pygame.K_RETURN:
-                    self._handle_selection()
-                elif event.key == pygame.K_ESCAPE:
-                    # Resume on ESC
-                    self._game.scene_manager.pop()
+        pass
 
     def _handle_selection(self) -> None:
         """Handle menu selection."""
         if self._selected_index == 0:  # Resume
             logging.info("Resume selected")
-            self._game.scene_manager.pop()
+            self.game.scene_manager.pop()
         elif self._selected_index == 1:  # Options
             logging.info("Options selected")
             from src.scenes.options_scene import OptionsScene
 
             options_scene = OptionsScene(self.game, return_to_menu=False)
-            self._game.scene_manager.push(options_scene)
+            self.game.scene_manager.push(options_scene)
         elif self._selected_index == 2:  # Exit to Menu
             logging.info("Exit to Menu selected")
             from src.scenes.menu_scene import MenuScene
 
-            self._game.scene_manager.clear()
-            self._game.scene_manager.push(MenuScene(self._game))
+            self.game.scene_manager.clear()
+            self.game.scene_manager.push(MenuScene(self.game))
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the pause menu.
