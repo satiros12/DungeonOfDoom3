@@ -15,7 +15,7 @@ class PhysicsSystem:
 
     def __init__(self) -> None:
         """Initialize the physics system."""
-        self._player_size = constants.TILE_SIZE * 0.8
+        self._player_size = constants.TILE_SIZE * 0.4  # Smaller hitbox for better movement
         self._doors: List[Door] = []
         logging.debug("PhysicsSystem initialized")
 
@@ -60,9 +60,7 @@ class PhysicsSystem:
                     door_col = int(door.position.x / constants.TILE_SIZE)
                     door_row = int(door.position.y / constants.TILE_SIZE)
                     if door_col == col and door_row == row:
-                        logging.debug(
-                            f"Collision with closed door at cell ({col}, {row})"
-                        )
+                        logging.debug(f"Collision with closed door at cell ({col}, {row})")
                         return True
 
         return False
@@ -107,9 +105,7 @@ class PhysicsSystem:
         # No movement possible
         return position
 
-    def get_tile_at_position(
-        self, position: pygame.Vector2, tilemap: TileMap
-    ) -> Optional[str]:
+    def get_tile_at_position(self, position: pygame.Vector2, tilemap: TileMap) -> Optional[str]:
         """Get the tile type at a world position.
 
         Args:
