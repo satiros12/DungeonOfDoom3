@@ -1,5 +1,6 @@
 """Game Scene for playing the dungeon levels."""
 
+import json
 import logging
 import math
 from typing import Optional, List
@@ -23,6 +24,21 @@ from src.systems.input_system import InputSystem
 from src.systems.physics_system import PhysicsSystem
 from src.systems.ai_system import AISystem
 from src.systems.combat_system import CombatSystem
+from src.systems.audio_system import AudioSystem
+
+
+def load_options() -> dict:
+    """Load game options from config file."""
+    try:
+        with open("config/options.json", "r") as f:
+            return json.load(f)
+    except Exception:
+        return {
+            "fullscreen": False,
+            "turn_speed": 90,
+            "music_volume": 0.7,
+            "sfx_volume": 0.5,
+        }
 
 
 class GameScene(Scene):
@@ -42,6 +58,7 @@ class GameScene(Scene):
         self._camera = CameraSystem(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
         self._ai_system = AISystem(level_number)
         self._combat_system = CombatSystem()
+        self._audio_system = AudioSystem()
         self._player: Optional[Player] = None
         self._tilemap: Optional[TileMap] = None
         self._doors: List[Door] = []
@@ -49,6 +66,9 @@ class GameScene(Scene):
         self._items: List[Item] = []
         self._show_health = False
         self._health_display_time = 0.0
+        self._show_debug = False
+        self._options = load_options()
+        self._turn_speed = self._options.get("turn_speed", constants.TURN_SPEED_DEFAULT)
 
         # Load the level
         self._load_level(level_number)
@@ -258,7 +278,7 @@ class GameScene(Scene):
         if not self._player:
             return
 
-        turn_speed = constants.TURN_SPEED_DEFAULT
+        turn_speed = self._turn_speed
 
         if actions["rotate_left"]:
             self._player.rotate(-turn_speed, dt)
@@ -334,7 +354,8 @@ class GameScene(Scene):
 
     def _toggle_debug(self) -> None:
         """Toggle debug overlay."""
-        logging.debug("Debug toggle requested")
+        self._show_debug = not self._show_debug
+        logging.debug(f"Debug overlay: {self._show_debug}")
 
     def _handle_level_complete(self) -> None:
         """Handle level completion."""
@@ -389,6 +410,10 @@ class GameScene(Scene):
         # Render health HUD if visible
         if self._show_health:
             self._render_health_hud(screen)
+
+        # Render debug overlay if visible
+        if self._show_debug:
+            self._render_debug_overlay(screen)
 
     def _render_tilemap(self, screen: pygame.Surface) -> None:
         """Render the tilemap.
@@ -537,3 +562,55 @@ class GameScene(Scene):
             health_text,
             (constants.HUD_MARGIN, constants.HUD_MARGIN),
         )
+
+    def _render_debug_overlay(self, screen: pygame.Surface) -> None:
+        """Render the debug overlay with game information.
+
+        Args:
+            screen: The pygame surface to render to.
+        """
+        if not self._player:
+            return
+
+        # Get FPS from game clock (approximate)
+        fps = 60  # This would need to be passed from Game
+
+        # Calculate alive enemies
+        alive_enemies = sum(1 for e in self._enemies if e.is_alive())
+
+        # Debug information
+        debug_info = [
+            f"FPS: {fps}",
+            f"Player Pos: ({int(self._player.position.x)}, {int(self._player.position.y)})",
+            f"Player Rotation: {int(self._player.rotation)}°",
+            f"Current State: {'Alive' if self._player.is_alive() else 'Dead'}",
+            f"Level: {self.level_number}",
+            f"Enemies Alive: {alive_enemies}",
+            f"Weapon: {self._player.weapon.name}",
+            f"Armor: {self._player.armor.name}",
+            f"Turn Speed: {self._turn_speed}°/s",
+        ]
+
+        # Render debug background
+        font = pygame.font.Font(None, constants.UI_FONT_DEBUG)
+        line_height = 18
+        padding = 10
+
+        # Calculate background dimensions
+        max_width = max(font.size(line)[0] for line in debug_info)
+        bg_rect = pygame.Rect(
+            10, 10, max_width + padding * 2, len(debug_info) * line_height + padding * 2
+        )
+
+        # Draw semi-transparent background
+        bg_surface = pygame.Surface((bg_rect.width, bg_rect.height))
+        bg_surface.set_alpha(180)
+        bg_surface.fill((0, 0, 0))
+        screen.blit(bg_surface, bg_rect.topleft)
+
+        # Render debug text
+        for i, line in enumerate(debug_info):
+            text = font.render(line, True, (0, 255, 0))
+            screen.blit(
+                text, (bg_rect.x + padding, bg_rect.y + padding + i * line_height)
+            )

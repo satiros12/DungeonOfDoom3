@@ -23,7 +23,7 @@ class PauseScene(Scene):
         super().__init__(game)
         self._game_scene = game_scene
         self._selected_index = 0
-        self._options = ["Resume", "Exit to Menu"]
+        self._options = ["Resume", "Options", "Exit to Menu"]
         self._font = pygame.font.Font(None, constants.UI_FONT_MENU)
         self._title_font = pygame.font.Font(None, constants.UI_FONT_TITLE)
 
@@ -59,7 +59,13 @@ class PauseScene(Scene):
         if self._selected_index == 0:  # Resume
             logging.info("Resume selected")
             self._game.scene_manager.pop()
-        elif self._selected_index == 1:  # Exit to Menu
+        elif self._selected_index == 1:  # Options
+            logging.info("Options selected")
+            from src.scenes.options_scene import OptionsScene
+
+            options_scene = OptionsScene(self.game, return_to_menu=False)
+            self._game.scene_manager.push(options_scene)
+        elif self._selected_index == 2:  # Exit to Menu
             logging.info("Exit to Menu selected")
             from src.scenes.menu_scene import MenuScene
 

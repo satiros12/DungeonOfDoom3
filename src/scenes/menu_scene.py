@@ -66,8 +66,11 @@ class MenuScene(Scene):
             game_scene = GameScene(self.game, level_number=1)
             self.game.change_scene(game_scene)
         elif option == "OPTIONS":
-            # TODO: Open options menu
             logging.info("Opening options...")
+            from src.scenes.options_scene import OptionsScene
+
+            options_scene = OptionsScene(self.game, return_to_menu=True)
+            self._game.scene_manager.push(options_scene)
         elif option == "EXIT":
             logging.info("Exiting game...")
             self.game.running = False
