@@ -16,26 +16,53 @@ class InputSystem:
         self._keys_pressed: Dict[str, bool] = {}
         self._keys_just_pressed: Dict[str, bool] = {}
         self._keys_just_released: Dict[str, bool] = {}
+        self._previous_keys: Dict[str, bool] = {}
         logging.debug("InputSystem initialized")
 
     def update(self) -> None:
         """Update input state for the current frame."""
-        # Reset frame-specific states
+        # Get current key states using pygame.key.get_pressed()
+        # This doesn't consume events from the queue
+        keys = pygame.key.get_pressed()
+
+        key_mapping = {
+            pygame.K_w: "forward",
+            pygame.K_s: "backward",
+            pygame.K_a: "left",
+            pygame.K_d: "right",
+            pygame.K_LEFT: "rotate_left",
+            pygame.K_RIGHT: "rotate_right",
+            pygame.K_SPACE: "attack",
+            pygame.K_e: "interact",
+            pygame.K_i: "drop_weapon",
+            pygame.K_j: "drop_armor",
+            pygame.K_TAB: "toggle_health",
+            pygame.K_ESCAPE: "pause",
+            pygame.K_F3: "debug",
+        }
+
+        # Clear just pressed/released
         self._keys_just_pressed.clear()
         self._keys_just_released.clear()
 
-        # Process all keyboard events
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                key_name = self._get_key_name(event.key)
-                if key_name and not self._keys_pressed.get(key_name, False):
-                    self._keys_just_pressed[key_name] = True
-                self._keys_pressed[key_name] = True
-            elif event.type == pygame.KEYUP:
-                key_name = self._get_key_name(event.key)
-                if key_name:
-                    self._keys_pressed[key_name] = False
-                    self._keys_just_released[key_name] = True
+        # Update key states
+        for pygame_key, action_name in key_mapping.items():
+            is_pressed = bool(keys[pygame_key])
+            was_pressed = self._previous_keys.get(action_name, False)
+
+            # Update pressed state
+            self._keys_pressed[action_name] = is_pressed
+
+            # Detect just pressed (was not pressed, now is)
+            if is_pressed and not was_pressed:
+                self._keys_just_pressed[action_name] = True
+
+            # Detect just released (was pressed, now is not)
+            if not is_pressed and was_pressed:
+                self._keys_just_released[action_name] = True
+
+            # Update previous state
+            self._previous_keys[action_name] = is_pressed
 
     def _get_key_name(self, key: int) -> str:
         """Convert pygame key code to action name.
