@@ -40,6 +40,11 @@ class Game:
         """Set the game running state."""
         self._running = value
 
+    @property
+    def scene_manager(self) -> SceneManager:
+        """Get the scene manager."""
+        return self._scene_manager
+
     def change_scene(self, scene: Scene) -> None:
         """Change the current scene.
 
