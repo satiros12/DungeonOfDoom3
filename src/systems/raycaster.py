@@ -67,12 +67,13 @@ class Raycaster:
             )
 
             if distance > 0:
+                # Prevent division by zero
+                distance = max(0.1, distance)
+
                 # Fix fisheye effect
                 distance *= math.cos(angle - player_rad)
 
                 # Calculate wall height (closer = taller)
-                # Base height is screen height, scaled by distance
-                distance = max(0.1, distance)  # Prevent division by zero
                 wall_height = int((constants.TILE_SIZE * constants.SCREEN_HEIGHT) / distance)
 
                 # Limit wall height to prevent overflow
