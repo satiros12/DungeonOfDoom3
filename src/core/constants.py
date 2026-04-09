@@ -16,6 +16,7 @@ MAP_HEIGHT = 48
 COLOR_PLAYER = (0, 255, 0)  # #00FF00 - Green
 COLOR_ENEMY = (255, 0, 0)  # #FF0000 - Red
 COLOR_DOOR = (0, 0, 255)  # #0000FF - Blue
+COLOR_DOOR_OPEN = (0, 255, 0)  # #00FF00 - Green (open door)
 COLOR_ITEM = (255, 255, 0)  # #FFFF00 - Yellow
 COLOR_WALL = (128, 128, 128)  # #808080 - Gray
 COLOR_DECORATION = (139, 69, 19)  # #8B4513 - Brown

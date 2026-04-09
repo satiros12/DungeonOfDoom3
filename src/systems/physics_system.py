@@ -1,12 +1,13 @@
 """Physics system for collision detection and movement resolution."""
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 import pygame
 
 from src.core import constants
 from src.entities.tilemap import TileMap
+from src.entities.door import Door
 
 
 class PhysicsSystem:
@@ -15,7 +16,16 @@ class PhysicsSystem:
     def __init__(self) -> None:
         """Initialize the physics system."""
         self._player_size = constants.TILE_SIZE * 0.8
+        self._doors: List[Door] = []
         logging.debug("PhysicsSystem initialized")
+
+    def set_doors(self, doors: List[Door]) -> None:
+        """Set the doors for collision detection.
+
+        Args:
+            doors: List of door entities.
+        """
+        self._doors = doors
 
     def check_collision(self, position: pygame.Vector2, tilemap: TileMap) -> bool:
         """Check if a position collides with walls.
@@ -41,8 +51,19 @@ class PhysicsSystem:
             row = int(corner_y / constants.TILE_SIZE)
 
             if tilemap.is_wall(col, row):
-                logging.debug(f"Collision at cell ({col}, {row})")
+                logging.debug(f"Collision with wall at cell ({col}, {row})")
                 return True
+
+            # Check for closed doors
+            for door in self._doors:
+                if not door.is_open:
+                    door_col = int(door.position.x / constants.TILE_SIZE)
+                    door_row = int(door.position.y / constants.TILE_SIZE)
+                    if door_col == col and door_row == row:
+                        logging.debug(
+                            f"Collision with closed door at cell ({col}, {row})"
+                        )
+                        return True
 
         return False
 

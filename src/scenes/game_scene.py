@@ -2,7 +2,7 @@
 
 import logging
 import math
-from typing import Optional
+from typing import Optional, List
 
 import pygame
 
@@ -11,6 +11,7 @@ from src.core.scene import Scene
 from src.core.game import Game
 from src.entities.player import Player
 from src.entities.tilemap import TileMap
+from src.entities.door import Door
 from src.loaders.map_loader import load_map
 from src.systems.camera_system import CameraSystem
 from src.systems.input_system import InputSystem
@@ -34,6 +35,7 @@ class GameScene(Scene):
         self._camera = CameraSystem(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
         self._player: Optional[Player] = None
         self._tilemap: Optional[TileMap] = None
+        self._doors: List[Door] = []
         self._show_health = False
         self._health_display_time = 0.0
 
@@ -66,6 +68,20 @@ class GameScene(Scene):
             start_pos[1] * constants.TILE_SIZE + constants.TILE_SIZE // 2,
         )
         self._player = Player(position=pixel_pos)
+
+        # Find and create doors from the tilemap
+        self._doors = []
+        for row in range(len(tiles)):
+            for col in range(len(tiles[row])):
+                if tiles[row][col] == "door":
+                    door_pos = pygame.Vector2(
+                        col * constants.TILE_SIZE,
+                        row * constants.TILE_SIZE,
+                    )
+                    self._doors.append(Door(door_pos))
+
+        # Pass doors to physics system for collision detection
+        self._physics_system.set_doors(self._doors)
 
         logging.info(f"Level {level_number} loaded: start_pos={start_pos}")
 
@@ -106,6 +122,10 @@ class GameScene(Scene):
 
         # Handle rotation
         self._handle_rotation(actions, dt)
+
+        # Handle door interaction
+        if actions["interact"]:
+            self._handle_door_interaction()
 
         # Update camera to follow player
         if self._player:
@@ -177,7 +197,33 @@ class GameScene(Scene):
     def _handle_pause(self) -> None:
         """Handle pause action."""
         logging.info("Pause requested")
-        # TODO: Implement pause menu
+        from src.scenes.pause_scene import PauseScene
+
+        self._game.scene_manager.push(PauseScene(self._game, self))
+
+    def _handle_door_interaction(self) -> None:
+        """Handle door interaction (E key)."""
+        if not self._player or not self._tilemap:
+            return
+
+        # Check if player is near a door tile
+        player_col = int(self._player.position.x // constants.TILE_SIZE)
+        player_row = int(self._player.position.y // constants.TILE_SIZE)
+
+        # Check adjacent tiles for doors
+        nearby_door = None
+        for door in self._doors:
+            door_col = int(door.position.x // constants.TILE_SIZE)
+            door_row = int(door.position.y // constants.TILE_SIZE)
+
+            # Check if adjacent (within 1 tile)
+            if abs(door_col - player_col) <= 1 and abs(door_row - player_row) <= 1:
+                nearby_door = door
+                break
+
+        if nearby_door:
+            nearby_door.toggle()
+            logging.info(f"Door toggled: open={nearby_door.is_open}")
 
     def _toggle_debug(self) -> None:
         """Toggle debug overlay."""
@@ -186,7 +232,22 @@ class GameScene(Scene):
     def _handle_level_complete(self) -> None:
         """Handle level completion."""
         logging.info(f"Level {self.level_number} completed!")
-        # TODO: Implement level transition
+
+        # Determine next level
+        next_level = self.level_number + 1
+        if next_level > 5:
+            # Victory - all levels complete
+            from src.scenes.victory_scene import VictoryScene
+
+            self._game.scene_manager.replace(VictoryScene(self._game))
+        else:
+            # Transition to next level
+            level_name = constants.LEVEL_NAMES.get(next_level, "Unknown")
+            from src.scenes.level_transition_scene import LevelTransitionScene
+
+            self._game.scene_manager.replace(
+                LevelTransitionScene(self._game, level_name, next_level)
+            )
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the game scene.
