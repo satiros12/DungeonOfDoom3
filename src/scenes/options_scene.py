@@ -42,20 +42,11 @@ class OptionsScene(Scene):
 
         logging.info("Options scene initialized")
 
-    def handle_event(self, event: pygame.event.Event) -> None:
-        """Handle pygame events.
+    def _load_options_from_file(self) -> dict:
+        """Load options from the config file.
 
-        Args:
-            event: The pygame event to handle.
-        """
-        if event.type == pygame.KEYDOWN:
-            self._handle_keydown(event.key)
-
-    def update(self, dt: float) -> None:
-        """Update options input handling.
-
-        Args:
-            dt: Delta time since last frame in seconds.
+        Returns:
+            Dictionary of options.
         """
         try:
             with open("config/options.json", "r") as f:
@@ -68,6 +59,15 @@ class OptionsScene(Scene):
                 "music_volume": 0.7,
                 "sfx_volume": 0.5,
             }
+
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle pygame events.
+
+        Args:
+            event: The pygame event to handle.
+        """
+        if event.type == pygame.KEYDOWN:
+            self._handle_keydown(event.key)
 
     def update(self, dt: float) -> None:
         """Update options input handling.

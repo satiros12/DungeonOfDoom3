@@ -486,7 +486,7 @@ class GameScene(Scene):
         pygame.draw.circle(screen, constants.COLOR_PLAYER, (x, y), size)
 
         # Draw direction indicator
-        angle_rad = pygame.math.radians(self._player.rotation - 90)
+        angle_rad = math.radians(self._player.rotation - 90)
         end_x = x + int(math.cos(angle_rad) * size)
         end_y = y + int(math.sin(angle_rad) * size)
         pygame.draw.line(screen, (0, 0, 0), (x, y), (end_x, end_y), 2)
