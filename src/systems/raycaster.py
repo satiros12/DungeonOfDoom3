@@ -1,4 +1,4 @@
-"""Raycasting engine for first-person DOOM-style rendering."""
+"""Simplified raycasting engine for first-person DOOM-style rendering."""
 
 import logging
 import math
@@ -31,7 +31,7 @@ class Raycaster:
         self.fov = fov
         self.fov_rad = math.radians(fov)
         self.half_fov = self.fov_rad / 2
-        self.num_rays = constants.SCREEN_WIDTH // 2  # Ray every 2 pixels for performance
+        self.num_rays = constants.SCREEN_WIDTH // 2  # Ray every 2 pixels
         self.delta_angle = self.fov_rad / self.num_rays
         self.max_depth = constants.MAP_WIDTH * constants.TILE_SIZE * 2
         self.wall_strips: List[WallStrip] = []
@@ -53,38 +53,44 @@ class Raycaster:
             List of wall strips to render.
         """
         self.wall_strips = []
+
+        # Convert rotation to radians (0 = right, 90 = down in screen coords)
         player_rad = math.radians(player_rotation)
+
+        # Starting angle (leftmost ray)
         start_angle = player_rad - self.half_fov
 
         for i in range(self.num_rays):
-            angle = start_angle + i * self.delta_angle
-            # In screen coordinates: X increases right, Y increases down
-            # So we need to negate sin to match screen coords
-            ray_dir_x = math.cos(angle)
-            ray_dir_y = -math.sin(angle)  # Negate for screen coordinate system
+            # Calculate ray angle
+            ray_angle = start_angle + i * self.delta_angle
 
-            # Cast ray
-            distance, hit_tile, hit_side = self._cast_ray(
+            # Ray direction in screen coordinates
+            # X increases right, Y increases down
+            ray_dir_x = math.cos(ray_angle)
+            ray_dir_y = -math.sin(ray_angle)  # Negate because Y is inverted in screen
+
+            # Cast ray and get distance
+            distance, hit_tile, hit_side = self._cast_ray_simple(
                 player_pos.x, player_pos.y, ray_dir_x, ray_dir_y, tilemap
             )
 
             if distance > 0:
                 # Prevent division by zero
-                distance = max(0.1, distance)
+                distance = max(1.0, distance)
 
-                # Fix fisheye effect - use raw angle for correction
-                # Need to account for the negated Y
-                fisheye_angle = angle - player_rad
-                distance *= math.cos(fisheye_angle)
+                # Fix fisheye effect
+                angle_diff = ray_angle - player_rad
+                distance = distance * math.cos(angle_diff)
 
-                # Calculate wall height (closer = taller)
-                # Scale factor adjusted for screen coordinates
-                wall_height = int((constants.SCREEN_HEIGHT * 32) / distance)
+                # Calculate wall height based on distance
+                # Closer walls are taller, farther walls are shorter
+                # Adjust the divisor to change the "lens" effect
+                wall_height = int(constants.SCREEN_HEIGHT / (distance / 50))
 
-                # Limit wall height to prevent overflow
-                wall_height = min(wall_height * 2, constants.SCREEN_HEIGHT * 2)
+                # Clamp wall height
+                wall_height = max(10, min(wall_height, constants.SCREEN_HEIGHT))
 
-                # Determine color based on tile type
+                # Get wall color with shading
                 color = self._get_wall_color(hit_tile, hit_side, distance)
 
                 strip = WallStrip(
@@ -97,7 +103,7 @@ class Raycaster:
 
         return self.wall_strips
 
-    def _cast_ray(
+    def _cast_ray_simple(
         self,
         start_x: float,
         start_y: float,
@@ -105,11 +111,11 @@ class Raycaster:
         dir_y: float,
         tilemap,
     ) -> Tuple[float, str, int]:
-        """Cast a single ray and find wall hit.
+        """Simple ray casting using step method.
 
         Args:
-            start_x: Starting X position.
-            start_y: Starting Y position.
+            start_x: Starting X position in pixels.
+            start_y: Starting Y position in pixels.
             dir_x: Ray direction X.
             dir_y: Ray direction Y.
             tilemap: The tile map.
@@ -117,92 +123,62 @@ class Raycaster:
         Returns:
             Tuple of (distance, tile_type, side).
         """
-        # DDA algorithm for raycasting
-        map_x = int(start_x / constants.TILE_SIZE)
-        map_y = int(start_y / constants.TILE_SIZE)
+        # Normalize direction
+        length = math.sqrt(dir_x * dir_x + dir_y * dir_y)
+        if length == 0:
+            return 1.0, "wall", 0
 
-        # Length of ray from one x or y-side to next x or y-side
-        if dir_x == 0:
-            delta_dist_x = 1e30
-        else:
-            delta_dist_x = abs(1 / dir_x)
+        dir_x /= length
+        dir_y /= length
 
-        if dir_y == 0:
-            delta_dist_y = 1e30
-        else:
-            delta_dist_y = abs(1 / dir_y)
+        # Start from player position
+        x = start_x
+        y = start_y
 
-        # Step direction and initial side distances
-        step_x = 1 if dir_x >= 0 else -1
-        if dir_x >= 0:
-            if dir_x == 0:
-                side_dist_x = 1e30
-            else:
-                side_dist_x = ((map_x + 1) * constants.TILE_SIZE - start_x) / dir_x
-        else:
-            side_dist_x = (
-                (start_x - map_x * constants.TILE_SIZE) / abs(dir_x) if dir_x != 0 else 1e30
-            )
+        # Step size (smaller = more accurate but slower)
+        step_size = 2.0  # pixels
 
-        step_y = 1 if dir_y >= 0 else -1
-        if dir_y >= 0:
-            if dir_y == 0:
-                side_dist_y = 1e30
-            else:
-                # Moving down (increasing Y) - next row is map_y + 1
-                side_dist_y = ((map_y + 1) * constants.TILE_SIZE - start_y) / dir_y
-        else:
-            # Moving up (decreasing Y in screen) - next row is map_y
-            side_dist_y = (
-                (start_y - map_y * constants.TILE_SIZE) / abs(dir_y) if dir_y != 0 else 1e30
-            )
+        distance = 0.0
+        max_distance = self.max_depth
 
-        # DDA loop
-        hit = False
-        side = 0
-        while not hit:
-            # Jump to next map square
-            if side_dist_x < side_dist_y:
-                side_dist_x += delta_dist_x
-                map_x += step_x
-                side = 0
-            else:
-                side_dist_y += delta_dist_y
-                map_y += step_y
-                side = 1
+        side = 0  # 0 = hit vertical side, 1 = hit horizontal side
+
+        while distance < max_distance:
+            # Move along ray
+            x += dir_x * step_size
+            y += dir_y * step_size
+            distance += step_size
+
+            # Convert to map coordinates
+            map_x = int(x / constants.TILE_SIZE)
+            map_y = int(y / constants.TILE_SIZE)
 
             # Check bounds
             if map_x < 0 or map_x >= tilemap.width or map_y < 0 or map_y >= tilemap.height:
-                hit = True
-                continue
+                return distance, "wall", side
 
-            # Check if we hit a wall
+            # Check for wall
             tile = tilemap.get_tile(map_x, map_y)
             if tile == "wall" or tile == "door":
-                hit = True
+                # Determine which side was hit
+                prev_map_x = int((x - dir_x * step_size) / constants.TILE_SIZE)
+                prev_map_y = int((y - dir_y * step_size) / constants.TILE_SIZE)
 
-        # Calculate distance
-        if side == 0:
-            distance = (map_x - start_x / constants.TILE_SIZE + (1 - step_x) / 2) / dir_x
-        else:
-            distance = (map_y - start_y / constants.TILE_SIZE + (1 - step_y) / 2) / dir_y
+                if prev_map_x != map_x:
+                    side = 0  # Hit vertical side
+                else:
+                    side = 1  # Hit horizontal side
 
-        distance *= constants.TILE_SIZE
+                return distance, tile, side
 
-        # Get tile type
-        if map_x >= 0 and map_x < tilemap.width and map_y >= 0 and map_y < tilemap.height:
-            tile = tilemap.get_tile(map_x, map_y)
-        else:
-            tile = "wall"
-
-        return distance, tile, side
+        return max_distance, "wall", 0
 
     def _get_wall_color(self, tile: str, side: int, distance: float) -> pygame.Color:
         """Get wall color with shading based on distance and side.
 
         Args:
             tile: Tile type.
-            side: Which side was hit (0 = x, 1 = y).
+            side: Which side was hit (0 = vertical, 1 = horizontal).
             distance: Distance to wall.
 
         Returns:
@@ -210,19 +186,19 @@ class Raycaster:
         """
         # Base colors
         base_colors = {
-            "wall": (100, 100, 100),  # Gray walls
+            "wall": (120, 120, 120),  # Gray walls
             "door": (100, 100, 200),  # Blue doors
         }
 
-        base_color = base_colors.get(tile, (100, 100, 100))
+        base_color = base_colors.get(tile, (120, 120, 120))
 
-        # Apply side shading (y-side is darker)
+        # Apply side shading (horizontal side is darker)
         if side == 1:
-            base_color = tuple(max(0, c - 30) for c in base_color)
+            base_color = tuple(max(0, c - 40) for c in base_color)
 
         # Apply distance shading (farther = darker)
         max_dist = self.max_depth
-        shade_factor = max(0.3, 1.0 - (distance / max_dist) * 0.7)
+        shade_factor = max(0.2, 1.0 - (distance / max_dist) * 0.8)
         shaded_color = tuple(int(c * shade_factor) for c in base_color)
 
         return pygame.Color(*shaded_color)
@@ -238,22 +214,22 @@ def render_first_person(
         screen: Pygame surface to render to.
         wall_strips: List of wall strips to render.
     """
-    # Draw ceiling (dark gray gradient)
+    # Draw ceiling (dark gray)
     ceiling_color = (30, 30, 30)
     ceiling_rect = pygame.Rect(0, 0, constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT // 2)
     pygame.draw.rect(screen, ceiling_color, ceiling_rect)
 
-    # Draw floor (darker with gradient effect)
-    floor_color = (20, 20, 20)
+    # Draw floor (slightly lighter gray)
+    floor_color = (40, 40, 40)
     floor_rect = pygame.Rect(
         0, constants.SCREEN_HEIGHT // 2, constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT // 2
     )
     pygame.draw.rect(screen, floor_color, floor_rect)
 
-    # Draw floor line
+    # Draw floor line (horizon)
     pygame.draw.line(
         screen,
-        (40, 40, 40),
+        (60, 60, 60),
         (0, constants.SCREEN_HEIGHT // 2),
         (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT // 2),
         2,
