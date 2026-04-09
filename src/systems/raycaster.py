@@ -58,8 +58,10 @@ class Raycaster:
 
         for i in range(self.num_rays):
             angle = start_angle + i * self.delta_angle
+            # In screen coordinates: X increases right, Y increases down
+            # So we need to negate sin to match screen coords
             ray_dir_x = math.cos(angle)
-            ray_dir_y = math.sin(angle)
+            ray_dir_y = -math.sin(angle)  # Negate for screen coordinate system
 
             # Cast ray
             distance, hit_tile, hit_side = self._cast_ray(
@@ -70,11 +72,12 @@ class Raycaster:
                 # Prevent division by zero
                 distance = max(0.1, distance)
 
-                # Fix fisheye effect
+                # Fix fisheye effect - use raw angle for correction
                 distance *= math.cos(angle - player_rad)
 
                 # Calculate wall height (closer = taller)
-                wall_height = int((constants.TILE_SIZE * constants.SCREEN_HEIGHT) / distance)
+                # Scale factor adjusted for screen coordinates
+                wall_height = int((constants.SCREEN_HEIGHT * 32) / distance)
 
                 # Limit wall height to prevent overflow
                 wall_height = min(wall_height * 2, constants.SCREEN_HEIGHT * 2)
@@ -144,8 +147,10 @@ class Raycaster:
             if dir_y == 0:
                 side_dist_y = 1e30
             else:
+                # Moving down (increasing Y) - next row is map_y + 1
                 side_dist_y = ((map_y + 1) * constants.TILE_SIZE - start_y) / dir_y
         else:
+            # Moving up (decreasing Y in screen) - next row is map_y
             side_dist_y = (
                 (start_y - map_y * constants.TILE_SIZE) / abs(dir_y) if dir_y != 0 else 1e30
             )
