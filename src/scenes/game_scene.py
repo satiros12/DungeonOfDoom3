@@ -12,10 +12,14 @@ from src.core.game import Game
 from src.entities.player import Player
 from src.entities.tilemap import TileMap
 from src.entities.door import Door
+from src.entities.enemy import Enemy
 from src.loaders.map_loader import load_map
+from src.loaders.patrol_loader import load_patrols
+from src.loaders.enemy_loader import load_enemies
 from src.systems.camera_system import CameraSystem
 from src.systems.input_system import InputSystem
 from src.systems.physics_system import PhysicsSystem
+from src.systems.ai_system import AISystem
 
 
 class GameScene(Scene):
@@ -33,9 +37,11 @@ class GameScene(Scene):
         self._input_system = InputSystem()
         self._physics_system = PhysicsSystem()
         self._camera = CameraSystem(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
+        self._ai_system = AISystem(level_number)
         self._player: Optional[Player] = None
         self._tilemap: Optional[TileMap] = None
         self._doors: List[Door] = []
+        self._enemies: List[Enemy] = []
         self._show_health = False
         self._health_display_time = 0.0
 
@@ -83,7 +89,27 @@ class GameScene(Scene):
         # Pass doors to physics system for collision detection
         self._physics_system.set_doors(self._doors)
 
-        logging.info(f"Level {level_number} loaded: start_pos={start_pos}")
+        # Load enemies
+        self._enemies = []
+        patrols = load_patrols(level_number)
+        enemies_data = load_enemies(level_number)
+
+        for enemy_data in enemies_data:
+            patrol_id = enemy_data.get("patrol_id", -1)
+            patrol_points = (
+                patrols[patrol_id] if 0 <= patrol_id < len(patrols) else None
+            )
+
+            enemy = Enemy(
+                position=enemy_data["position"],
+                enemy_type=enemy_data.get("type", "guard"),
+                patrol_points=patrol_points,
+            )
+            self._enemies.append(enemy)
+
+        logging.info(
+            f"Level {level_number} loaded: start_pos={start_pos}, enemies={len(self._enemies)}"
+        )
 
     def update(self, dt: float) -> None:
         """Update game logic.
@@ -126,6 +152,23 @@ class GameScene(Scene):
         # Handle door interaction
         if actions["interact"]:
             self._handle_door_interaction()
+
+        # Update enemies AI
+        if self._player and self._tilemap:
+            self._ai_system.update_enemies(
+                self._enemies, self._player, self._tilemap, self._doors, dt
+            )
+
+            # Check enemy-player collision
+            for enemy in self._enemies:
+                if enemy.is_alive() and self._ai_system.check_enemy_player_collision(
+                    enemy, self._player
+                ):
+                    if enemy.can_attack():
+                        enemy.attack()
+                        player_damage = enemy.get_damage()
+                        self._player.take_damage(player_damage)
+                        logging.info(f"Player hit by enemy, damage: {player_damage}")
 
         # Update camera to follow player
         if self._player:
@@ -263,6 +306,9 @@ class GameScene(Scene):
         # Render tilemap
         self._render_tilemap(screen)
 
+        # Render enemies
+        self._render_enemies(screen)
+
         # Render player
         self._render_player(screen)
 
@@ -326,6 +372,30 @@ class GameScene(Scene):
         end_x = x + int(math.cos(angle_rad) * size)
         end_y = y + int(math.sin(angle_rad) * size)
         pygame.draw.line(screen, (0, 0, 0), (x, y), (end_x, end_y), 2)
+
+    def _render_enemies(self, screen: pygame.Surface) -> None:
+        """Render enemies.
+
+        Args:
+            screen: The pygame surface to render to.
+        """
+        for enemy in self._enemies:
+            if not enemy.is_alive():
+                continue
+
+            screen_pos = self._camera.world_to_screen(enemy.position)
+            x = int(screen_pos.x)
+            y = int(screen_pos.y)
+            size = constants.TILE_SIZE // 2
+
+            # Draw enemy as a circle (red) with direction indicator
+            pygame.draw.circle(screen, constants.COLOR_ENEMY, (x, y), size)
+
+            # Draw direction indicator
+            angle_rad = math.radians(enemy.rotation - 90)
+            end_x = x + int(math.cos(angle_rad) * size)
+            end_y = y + int(math.sin(angle_rad) * size)
+            pygame.draw.line(screen, (0, 0, 0), (x, y), (end_x, end_y), 2)
 
     def _render_health_hud(self, screen: pygame.Surface) -> None:
         """Render the health HUD.
