@@ -7,6 +7,7 @@ from typing import List, Optional
 import pygame
 
 from src.core import constants
+from src.entities.armor import Armor, NO_ARMOR
 
 
 class Enemy:
@@ -38,6 +39,8 @@ class Enemy:
         self.health = 100
         self.speed = constants.ENEMY_SPEED * constants.TILE_SIZE
         self._is_alive = True
+        self.armor: Armor = NO_ARMOR  # Enemies have no armor by default
+        self._last_attack_time = 0.0
         logging.debug(f"Enemy initialized at {position} with type {enemy_type}")
 
     def update(

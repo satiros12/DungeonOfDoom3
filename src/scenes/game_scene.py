@@ -13,13 +13,16 @@ from src.entities.player import Player
 from src.entities.tilemap import TileMap
 from src.entities.door import Door
 from src.entities.enemy import Enemy
+from src.entities.item import Item, ItemType
 from src.loaders.map_loader import load_map
 from src.loaders.patrol_loader import load_patrols
 from src.loaders.enemy_loader import load_enemies
+from src.loaders.item_loader import load_items
 from src.systems.camera_system import CameraSystem
 from src.systems.input_system import InputSystem
 from src.systems.physics_system import PhysicsSystem
 from src.systems.ai_system import AISystem
+from src.systems.combat_system import CombatSystem
 
 
 class GameScene(Scene):
@@ -38,10 +41,12 @@ class GameScene(Scene):
         self._physics_system = PhysicsSystem()
         self._camera = CameraSystem(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
         self._ai_system = AISystem(level_number)
+        self._combat_system = CombatSystem()
         self._player: Optional[Player] = None
         self._tilemap: Optional[TileMap] = None
         self._doors: List[Door] = []
         self._enemies: List[Enemy] = []
+        self._items: List[Item] = []
         self._show_health = False
         self._health_display_time = 0.0
 
@@ -107,8 +112,12 @@ class GameScene(Scene):
             )
             self._enemies.append(enemy)
 
+        # Load items
+        self._items = load_items(level_number)
+
         logging.info(
-            f"Level {level_number} loaded: start_pos={start_pos}, enemies={len(self._enemies)}"
+            f"Level {level_number} loaded: start_pos={start_pos}, "
+            f"enemies={len(self._enemies)}, items={len(self._items)}"
         )
 
     def update(self, dt: float) -> None:
@@ -149,9 +158,21 @@ class GameScene(Scene):
         # Handle rotation
         self._handle_rotation(actions, dt)
 
-        # Handle door interaction
+        # Handle item interaction (E key)
         if actions["interact"]:
-            self._handle_door_interaction()
+            self._handle_item_interaction()
+
+        # Handle drop weapon (I key)
+        if actions.get("drop_weapon", False):
+            self._handle_drop_weapon()
+
+        # Handle drop armor (J key)
+        if actions.get("drop_armor", False):
+            self._handle_drop_armor()
+
+        # Handle attack (Space key)
+        if actions["attack"]:
+            self._handle_attack()
 
         # Update enemies AI
         if self._player and self._tilemap:
@@ -212,7 +233,9 @@ class GameScene(Scene):
             direction.y = 0
 
         if direction.length() > 0:
-            distance = self._player.speed * dt
+            # Use armor speed modifier
+            speed_modifier = self._player.armor.speed_multiplier
+            distance = self._player.speed * speed_modifier * dt
             self._player.position = self._physics_system.resolve_move(
                 self._player.position,
                 direction.normalize(),
@@ -236,6 +259,42 @@ class GameScene(Scene):
             self._player.rotate(-turn_speed, dt)
         elif actions["rotate_right"]:
             self._player.rotate(turn_speed, dt)
+
+    def _handle_item_interaction(self) -> None:
+        """Handle item pickup with E key."""
+        if not self._player or not self._items:
+            return
+
+        player_pos = self._player.position
+        pickup_range = constants.TILE_SIZE * 1.5  # 1.5 tiles range
+
+        for item in self._items:
+            distance = player_pos.distance_to(item.position)
+            if distance <= pickup_range:
+                # Equip the item
+                item.equip(self._player)
+                # Remove item from world
+                self._items.remove(item)
+                logging.info(f"Picked up item: {item.get_name()}")
+                break
+
+    def _handle_drop_weapon(self) -> None:
+        """Handle dropping weapon with I key."""
+        if self._player:
+            self._player.drop_weapon()
+
+    def _handle_drop_armor(self) -> None:
+        """Handle dropping armor with J key."""
+        if self._player:
+            self._player.drop_armor()
+
+    def _handle_attack(self) -> None:
+        """Handle player attack with Space key."""
+        if not self._player:
+            return
+
+        # Use combat system to process attack
+        self._combat_system.player_attack(self._player, self._enemies)
 
     def _handle_pause(self) -> None:
         """Handle pause action."""
@@ -306,6 +365,9 @@ class GameScene(Scene):
         # Render tilemap
         self._render_tilemap(screen)
 
+        # Render items
+        self._render_items(screen)
+
         # Render enemies
         self._render_enemies(screen)
 
@@ -349,6 +411,27 @@ class GameScene(Scene):
                     pygame.draw.rect(screen, constants.COLOR_DOOR, rect)
                 elif tile_type == "decoration":
                     pygame.draw.rect(screen, constants.COLOR_DECORATION, rect, 1)
+
+    def _render_items(self, screen: pygame.Surface) -> None:
+        """Render items on the ground.
+
+        Args:
+            screen: The pygame surface to render to.
+        """
+        for item in self._items:
+            screen_pos = self._camera.world_to_screen(item.position)
+            x = int(screen_pos.x)
+            y = int(screen_pos.y)
+            size = constants.TILE_SIZE // 3
+
+            # Draw item as a small square (yellow/different color based on type)
+            if item.item_type == ItemType.WEAPON:
+                color = (255, 165, 0)  # Orange for weapons
+            else:
+                color = (0, 191, 255)  # Light blue for armor
+
+            rect = pygame.Rect(x - size, y - size, size * 2, size * 2)
+            pygame.draw.rect(screen, color, rect)
 
     def _render_player(self, screen: pygame.Surface) -> None:
         """Render the player.
@@ -431,10 +514,10 @@ class GameScene(Scene):
             )
             pygame.draw.rect(screen, constants.UI_COLOR_HEALTH, fill_rect)
 
-        # Health text
+        # Health text with weapon/armor info
         font = pygame.font.Font(None, constants.UI_FONT_HUD)
         health_text = font.render(
-            f"HP: {int(self._player.health)}",
+            f"HP: {int(self._player.health)} | {self._player.weapon.name} | {self._player.armor.name}",
             True,
             constants.UI_COLOR_TEXT_PRIMARY,
         )
