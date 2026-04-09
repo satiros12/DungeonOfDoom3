@@ -25,6 +25,7 @@ from src.systems.physics_system import PhysicsSystem
 from src.systems.ai_system import AISystem
 from src.systems.combat_system import CombatSystem
 from src.systems.audio_system import AudioSystem
+from src.systems.raycaster import Raycaster, render_first_person, render_weapon
 
 
 def load_options() -> dict:
@@ -59,6 +60,7 @@ class GameScene(Scene):
         self._ai_system = AISystem(level_number)
         self._combat_system = CombatSystem()
         self._audio_system = AudioSystem()
+        self._raycaster = Raycaster(fov=70)
         self._player: Optional[Player] = None
         self._tilemap: Optional[TileMap] = None
         self._doors: List[Door] = []
@@ -67,6 +69,7 @@ class GameScene(Scene):
         self._show_health = False
         self._health_display_time = 0.0
         self._show_debug = False
+        self._attack_animation = 0.0  # Weapon attack animation progress
         self._options = load_options()
         self._turn_speed = self._options.get("turn_speed", constants.TURN_SPEED_DEFAULT)
 
@@ -237,23 +240,38 @@ class GameScene(Scene):
             return
 
         direction = pygame.Vector2(0, 0)
+        rotation_direction = 0
 
+        # Forward/backward - move in direction of player rotation
         if actions["forward"]:
-            # Move in direction of player rotation
             angle_rad = math.radians(self._player.rotation - 90)
             direction.x = math.cos(angle_rad)
             direction.y = math.sin(angle_rad)
-        elif actions["backward"]:
+        if actions["backward"]:
             angle_rad = math.radians(self._player.rotation + 90)
-            direction.x = math.cos(angle_rad)
-            direction.y = math.sin(angle_rad)
+            direction.x += math.cos(angle_rad)
+            direction.y += math.sin(angle_rad)
 
+        # Left/right - strafe (perpendicular to rotation)
         if actions["left"]:
-            direction.x = -1
-            direction.y = 0
-        elif actions["right"]:
-            direction.x = 1
-            direction.y = 0
+            angle_rad = math.radians(self._player.rotation - 180)
+            direction.x += math.cos(angle_rad)
+            direction.y += math.sin(angle_rad)
+        if actions["right"]:
+            angle_rad = math.radians(self._player.rotation)
+            direction.x += math.cos(angle_rad)
+            direction.y += math.sin(angle_rad)
+
+        # Rotation with arrow keys (separate from movement)
+        if actions["rotate_left"]:
+            rotation_direction = -1
+        if actions["rotate_right"]:
+            rotation_direction = 1
+
+        # Apply rotation
+        if rotation_direction != 0:
+            self._player.rotation += self._turn_speed * rotation_direction * dt
+            self._player.rotation = self._player.rotation % 360
 
         if direction.length() > 0:
             # Use armor speed modifier
@@ -383,7 +401,7 @@ class GameScene(Scene):
         self.game.scene_manager.replace(GameOverScene(self._game))
 
     def render(self, screen: pygame.Surface) -> None:
-        """Render the game scene.
+        """Render the game scene in first-person view.
 
         Args:
             screen: The pygame surface to render to.
@@ -393,17 +411,17 @@ class GameScene(Scene):
         if not self._tilemap or not self._player:
             return
 
-        # Render tilemap
-        self._render_tilemap(screen)
+        # Cast rays and render first-person view
+        wall_strips = self._raycaster.cast_all_rays(
+            self._player.position,
+            self._player.rotation,
+            self._tilemap,
+        )
+        render_first_person(screen, wall_strips)
 
-        # Render items
-        self._render_items(screen)
-
-        # Render enemies
-        self._render_enemies(screen)
-
-        # Render player
-        self._render_player(screen)
+        # Render weapon at bottom
+        weapon_name = self._player.weapon.name if self._player.weapon else "Fists"
+        render_weapon(screen, weapon_name, self._attack_animation)
 
         # Render health HUD if visible
         if self._show_health:
