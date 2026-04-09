@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import pygame
 
@@ -12,11 +12,11 @@ from src.entities.weapon import Weapon
 from src.entities.armor import Armor
 
 
-def load_items(level_number: int) -> List[Item]:
+def load_items(level_number: Union[int, str]) -> List[Item]:
     """Load items for a specific level from JSON file.
 
     Args:
-        level_number: The level number to load items for (1-5).
+        level_number: The level number to load items for (1-5) or "test".
 
     Returns:
         List of Item instances for the level.

@@ -3,25 +3,22 @@
 import json
 import logging
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 import pygame
 
 
-def load_enemies(level_number: int) -> List[Dict[str, Any]]:
+def load_enemies(level_number: Union[int, str]) -> List[Dict[str, Any]]:
     """Load enemies for a level.
 
     Args:
-        level_number: The level number to load enemies for.
+        level_number: The level number to load enemies for (1-5) or "test".
 
     Returns:
         List of enemy data dictionaries with position, type, and patrol_id.
     """
     file_path = (
-        Path(__file__).parent.parent.parent
-        / "data"
-        / "enemies"
-        / f"level_{level_number}.json"
+        Path(__file__).parent.parent.parent / "data" / "enemies" / f"level_{level_number}.json"
     )
 
     if not file_path.exists():

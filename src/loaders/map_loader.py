@@ -2,16 +2,16 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 from src.core import constants
 
 
-def load_map(level_number: int) -> Dict:
+def load_map(level_number: Union[int, str]) -> Dict:
     """Load a map from a CSV file for the given level number.
 
     Args:
-        level_number: The level number to load (1-5).
+        level_number: The level number to load (1-5) or "test".
 
     Returns:
         Dictionary containing tiles, start_pos, exit_pos, doors,

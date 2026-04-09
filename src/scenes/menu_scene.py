@@ -22,7 +22,7 @@ class MenuScene(Scene):
         """
         super().__init__(game)
         self._selected_index = 0
-        self._options: List[str] = ["START GAME", "OPTIONS", "EXIT"]
+        self._options: List[str] = ["TEST", "START GAME", "OPTIONS", "EXIT"]
 
         # Initialize fonts
         pygame.font.init()
@@ -68,7 +68,11 @@ class MenuScene(Scene):
         option = self._options[self._selected_index]
         logging.info(f"Selected menu option: {option}")
 
-        if option == "START GAME":
+        if option == "TEST":
+            logging.info("Starting test level...")
+            game_scene = GameScene(self.game, level_number="test")
+            self.game.change_scene(game_scene)
+        elif option == "START GAME":
             logging.info("Starting game...")
             game_scene = GameScene(self.game, level_number=1)
             self.game.change_scene(game_scene)

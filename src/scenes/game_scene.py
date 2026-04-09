@@ -3,7 +3,7 @@
 import json
 import logging
 import math
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import pygame
 
@@ -45,19 +45,19 @@ def load_options() -> dict:
 class GameScene(Scene):
     """Main game scene for dungeon exploration."""
 
-    def __init__(self, game: Game, level_number: int) -> None:
+    def __init__(self, game: Game, level_number: Union[int, str]) -> None:
         """Initialize the game scene.
 
         Args:
             game: The main game instance.
-            level_number: The level number to load (1-5).
+            level_number: The level number to load (1-5) or "test".
         """
         super().__init__(game)
         self.level_number = level_number
         self._input_system = InputSystem()
         self._physics_system = PhysicsSystem()
         self._camera = CameraSystem(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
-        self._ai_system = AISystem(level_number)
+        self._ai_system = AISystem(level_number if isinstance(level_number, int) else 1)
         self._combat_system = CombatSystem()
         self._audio_system = AudioSystem()
         self._raycaster = Raycaster(fov=70)
@@ -78,11 +78,11 @@ class GameScene(Scene):
 
         logging.info(f"GameScene initialized for level {level_number}")
 
-    def _load_level(self, level_number: int) -> None:
+    def _load_level(self, level_number: Union[int, str]) -> None:
         """Load a level from the map loader.
 
         Args:
-            level_number: The level number to load.
+            level_number: The level number to load (1-5) or "test".
         """
         map_data = load_map(level_number)
 

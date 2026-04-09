@@ -3,25 +3,22 @@
 import json
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import pygame
 
 
-def load_patrols(level_number: int) -> List[List[pygame.Vector2]]:
+def load_patrols(level_number: Union[int, str]) -> List[List[pygame.Vector2]]:
     """Load patrol routes for a level.
 
     Args:
-        level_number: The level number to load patrols for.
+        level_number: The level number to load patrols for (1-5) or "test".
 
     Returns:
         List of patrol routes, each route is a list of Vector2 positions.
     """
     file_path = (
-        Path(__file__).parent.parent.parent
-        / "data"
-        / "patrols"
-        / f"level_{level_number}.json"
+        Path(__file__).parent.parent.parent / "data" / "patrols" / f"level_{level_number}.json"
     )
 
     if not file_path.exists():
