@@ -130,15 +130,25 @@ class Raycaster:
         # Step direction and initial side distances
         step_x = 1 if dir_x >= 0 else -1
         if dir_x >= 0:
-            side_dist_x = ((map_x + 1) * constants.TILE_SIZE - start_x) / dir_x
+            if dir_x == 0:
+                side_dist_x = 1e30
+            else:
+                side_dist_x = ((map_x + 1) * constants.TILE_SIZE - start_x) / dir_x
         else:
-            side_dist_x = (start_x - map_x * constants.TILE_SIZE) / abs(dir_x)
+            side_dist_x = (
+                (start_x - map_x * constants.TILE_SIZE) / abs(dir_x) if dir_x != 0 else 1e30
+            )
 
         step_y = 1 if dir_y >= 0 else -1
         if dir_y >= 0:
-            side_dist_y = ((map_y + 1) * constants.TILE_SIZE - start_y) / dir_y
+            if dir_y == 0:
+                side_dist_y = 1e30
+            else:
+                side_dist_y = ((map_y + 1) * constants.TILE_SIZE - start_y) / dir_y
         else:
-            side_dist_y = (start_y - map_y * constants.TILE_SIZE) / abs(dir_y)
+            side_dist_y = (
+                (start_y - map_y * constants.TILE_SIZE) / abs(dir_y) if dir_y != 0 else 1e30
+            )
 
         # DDA loop
         hit = False
