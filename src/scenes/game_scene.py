@@ -342,7 +342,7 @@ class GameScene(Scene):
         logging.info("Pause requested")
         from src.scenes.pause_scene import PauseScene
 
-        self.game.scene_manager.push(PauseScene(self._game, self))
+        self.game.scene_manager.push(PauseScene(self.game, self))
 
     def _handle_door_interaction(self) -> None:
         """Handle door interaction (E key)."""
@@ -383,22 +383,20 @@ class GameScene(Scene):
             # Victory - all levels complete
             from src.scenes.victory_scene import VictoryScene
 
-            self.game.scene_manager.replace(VictoryScene(self._game))
+            self.game.scene_manager.replace(VictoryScene(self.game))
         else:
             # Transition to next level
             level_name = constants.LEVEL_NAMES.get(next_level, "Unknown")
             from src.scenes.level_transition_scene import LevelTransitionScene
 
-            self.game.scene_manager.replace(
-                LevelTransitionScene(self._game, level_name, next_level)
-            )
+            self.game.scene_manager.replace(LevelTransitionScene(self.game, level_name, next_level))
 
     def _handle_player_death(self) -> None:
         """Handle player death."""
         logging.info("Player died!")
         from src.scenes.gameover_scene import GameOverScene
 
-        self.game.scene_manager.replace(GameOverScene(self._game))
+        self.game.scene_manager.replace(GameOverScene(self.game))
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the game scene in first-person view.
