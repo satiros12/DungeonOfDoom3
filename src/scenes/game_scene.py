@@ -25,7 +25,12 @@ from src.systems.physics_system import PhysicsSystem
 from src.systems.ai_system import AISystem
 from src.systems.combat_system import CombatSystem
 from src.systems.audio_system import AudioSystem
-from src.systems.raycaster import Raycaster, render_first_person, render_weapon
+from src.systems.raycaster import (
+    Raycaster,
+    render_first_person,
+    render_weapon,
+    render_items_first_person,
+)
 
 
 def load_options() -> dict:
@@ -181,7 +186,10 @@ class GameScene(Scene):
 
         # Handle item interaction (E key)
         if actions["interact"]:
+            # First try to pick up items
             self._handle_item_interaction()
+            # Then try to interact with doors
+            self._handle_door_interaction()
 
         # Handle drop weapon (I key)
         if actions.get("drop_weapon", False):
@@ -420,6 +428,14 @@ class GameScene(Scene):
             self._tilemap,
         )
         render_first_person(screen, wall_strips)
+
+        # Render items on the floor
+        render_items_first_person(
+            screen,
+            self._items,
+            self._player.position,
+            self._player.rotation,
+        )
 
         # Render weapon at bottom
         weapon_name = self._player.weapon.name if self._player.weapon else "Fists"

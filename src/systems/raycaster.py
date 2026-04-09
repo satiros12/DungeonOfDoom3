@@ -288,3 +288,77 @@ def render_weapon(screen: pygame.Surface, weapon_name: str, attack_animation: fl
     text = font.render(weapon_name.upper(), True, (200, 200, 200))
     text_rect = text.get_rect(center=(constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT - 15))
     screen.blit(text, text_rect)
+
+
+def render_items_first_person(
+    screen: pygame.Surface,
+    items: list,
+    player_pos: pygame.Vector2,
+    player_rotation: float,
+) -> None:
+    """Render items in first-person view as boxes on the floor.
+
+    Args:
+        screen: Pygame surface to render to.
+        items: List of Item entities.
+        player_pos: Player position in pixels.
+        player_rotation: Player rotation in degrees.
+    """
+    if not items:
+        return
+
+    player_rad = math.radians(player_rotation)
+    half_fov = math.radians(70) / 2
+
+    for item in items:
+        # Calculate direction to item
+        dx = item.position.x - player_pos.x
+        dy = item.position.y - player_pos.y
+
+        # Distance to item
+        distance = math.sqrt(dx * dx + dy * dy)
+        if distance < 20:  # Too close, don't render
+            continue
+
+        # Angle to item
+        item_angle = math.atan2(-dy, dx)  # Negate dy for screen coords
+
+        # Check if item is in FOV
+        angle_diff = item_angle - player_rad
+        # Normalize angle difference
+        while angle_diff > math.pi:
+            angle_diff -= 2 * math.pi
+        while angle_diff < -math.pi:
+            angle_diff += 2 * math.pi
+
+        if abs(angle_diff) > half_fov:
+            continue  # Item is outside FOV
+
+        # Calculate screen position
+        screen_x = constants.SCREEN_WIDTH // 2 + int(
+            (angle_diff / half_fov) * (constants.SCREEN_WIDTH // 2)
+        )
+
+        # Calculate item size based on distance (closer = bigger)
+        item_size = max(10, min(60, int(800 / distance)))
+
+        # Y position on screen (items are on the floor, so lower part of screen)
+        screen_y = constants.SCREEN_HEIGHT // 2 + 50 - int(distance / 10)
+
+        # Determine color based on item type
+        if item.item_type.name == "WEAPON":
+            color = (255, 165, 0)  # Orange for weapons
+        else:
+            color = (0, 191, 255)  # Light blue for armor
+
+        # Draw item as a box
+        item_rect = pygame.Rect(
+            screen_x - item_size // 2,
+            screen_y - item_size // 2,
+            item_size,
+            item_size,
+        )
+        pygame.draw.rect(screen, color, item_rect, border_radius=3)
+
+        # Draw outline
+        pygame.draw.rect(screen, (255, 255, 255), item_rect, 2, border_radius=3)
