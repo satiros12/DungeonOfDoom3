@@ -8,6 +8,7 @@ import pygame
 from src.core import constants
 from src.core.scene import Scene
 from src.core.game import Game
+from src.scenes.game_scene import GameScene
 
 
 class MenuScene(Scene):
@@ -61,8 +62,9 @@ class MenuScene(Scene):
         logging.info(f"Selected menu option: {option}")
 
         if option == "START GAME":
-            # TODO: Start the game
             logging.info("Starting game...")
+            game_scene = GameScene(self.game, level_number=1)
+            self.game.change_scene(game_scene)
         elif option == "OPTIONS":
             # TODO: Open options menu
             logging.info("Opening options...")
