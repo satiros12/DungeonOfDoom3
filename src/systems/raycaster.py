@@ -73,7 +73,9 @@ class Raycaster:
                 distance = max(0.1, distance)
 
                 # Fix fisheye effect - use raw angle for correction
-                distance *= math.cos(angle - player_rad)
+                # Need to account for the negated Y
+                fisheye_angle = angle - player_rad
+                distance *= math.cos(fisheye_angle)
 
                 # Calculate wall height (closer = taller)
                 # Scale factor adjusted for screen coordinates

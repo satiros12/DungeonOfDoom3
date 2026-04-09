@@ -249,22 +249,22 @@ class GameScene(Scene):
         # Forward - move in direction player is facing
         if actions["forward"]:
             direction.x += math.cos(player_rad)
-            direction.y += math.sin(player_rad)
+            direction.y += -math.sin(player_rad)  # Negate for screen coords
 
         # Backward - move opposite to facing direction
         if actions["backward"]:
             direction.x -= math.cos(player_rad)
-            direction.y -= math.sin(player_rad)
+            direction.y -= -math.sin(player_rad)
 
         # Strafe left - perpendicular to facing direction (90 degrees left)
         if actions["left"]:
-            direction.x += math.cos(player_rad - math.pi / 2)
-            direction.y += math.sin(player_rad - math.pi / 2)
+            direction.x += math.cos(player_rad + math.pi / 2)
+            direction.y += -math.sin(player_rad + math.pi / 2)
 
         # Strafe right - perpendicular to facing direction (90 degrees right)
         if actions["right"]:
-            direction.x += math.cos(player_rad + math.pi / 2)
-            direction.y += math.sin(player_rad + math.pi / 2)
+            direction.x += math.cos(player_rad - math.pi / 2)
+            direction.y += -math.sin(player_rad - math.pi / 2)
 
         # Rotation with arrow keys (separate from movement)
         if actions["rotate_left"]:
