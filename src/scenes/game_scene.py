@@ -180,16 +180,21 @@ class GameScene(Scene):
                 self._enemies, self._player, self._tilemap, self._doors, dt
             )
 
-            # Check enemy-player collision
-            for enemy in self._enemies:
-                if enemy.is_alive() and self._ai_system.check_enemy_player_collision(
-                    enemy, self._player
-                ):
-                    if enemy.can_attack():
-                        enemy.attack()
-                        player_damage = enemy.get_damage()
-                        self._player.take_damage(player_damage)
-                        logging.info(f"Player hit by enemy, damage: {player_damage}")
+        # Check enemy-player collision
+        for enemy in self._enemies:
+            if enemy.is_alive() and self._ai_system.check_enemy_player_collision(
+                enemy, self._player
+            ):
+                if enemy.can_attack():
+                    enemy.attack()
+                    player_damage = enemy.get_damage()
+                    self._player.take_damage(player_damage)
+                    logging.info(f"Player hit by enemy, damage: {player_damage}")
+
+        # Check for player death
+        if self._player and self._player.health <= 0:
+            self._handle_player_death()
+            return
 
         # Update camera to follow player
         if self._player:
@@ -350,6 +355,13 @@ class GameScene(Scene):
             self._game.scene_manager.replace(
                 LevelTransitionScene(self._game, level_name, next_level)
             )
+
+    def _handle_player_death(self) -> None:
+        """Handle player death."""
+        logging.info("Player died!")
+        from src.scenes.gameover_scene import GameOverScene
+
+        self._game.scene_manager.replace(GameOverScene(self._game))
 
     def render(self, screen: pygame.Surface) -> None:
         """Render the game scene.
